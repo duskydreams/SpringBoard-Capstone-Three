@@ -4,7 +4,7 @@ import pandas as pd
 from pathlib import Path
 from PIL import Image, ImageOps, UnidentifiedImageError #Image package for data wrangling
 
-def read_label_txt(data_path : file, text_path: file) -> DataFrame: 
+def read_label_txt(data_path: "file", text_path :"file") -> "DataFrame": 
     df_labels = pd.read_csv(text_path) #Assumes this will always be CSV
 
     records = []
