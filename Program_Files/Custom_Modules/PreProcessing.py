@@ -1,5 +1,6 @@
 import tensorflow as tf 
-from tensorflow.keras import layers, models
+from tensorflow.keras import layers, models, optimizers, losses
+import keras
 
 def augementate(images, direction, rotation_factor, height_factor, width_factor):
     x = layers.RandomFlip(direction)(images)
@@ -39,3 +40,61 @@ def compile_file_name (person_name, image_num):
 
 def mask_encoding(mask_status): 
     return 1 if mask_status.strip() == 'mask' else 0
+
+
+def build_model(self,hp): 
+    model = keras.Sequential()
+    model.add(keras.layers.Dense(
+        hp.Choice('units', [4,8,16,32,64]),
+        activation = 'relu'))
+    model.add(keras.layers.Dense(1,activation = 'softmax'))
+    model.compile( 
+    optimizer=optimizers.Adam(),    
+    loss = losses.binary_crossentropy)
+    return model
+
+
+def build_model_random_search(hp): 
+    model = keras.Sequential()
+
+    model.add(keras.layers.Flatten(input_shape=(160, 160, 3)))
+
+    for i in range(hp.Int('num_layers', min_value = 1, max_value = 5)):
+        model.add(
+            keras.layers.Dense(
+                units= hp.Int(f"units_{i}", min_value = 32, max_value = 256, step = 32),
+                activation=hp.Choice(f"activation_{i}", values = ['relu','tanh'])
+            )
+        )
+        if hp.Boolean(f"dropout_{i}"):
+            model.add(keras.layers.Dropout(rate=0.25))
+
+    model.add(keras.layers.Dense(1, activation="softmax"))
+
+    lr = hp.Float("learning_rate", min_value=1e-4, max_value=1e-2, sampling="log")
+    
+    model.compile(
+        optimizer=keras.optimizers.Adam(learning_rate=lr),
+        loss=losses.binary_crossentropy,
+        metrics=["accuracy"],
+    )
+    return model
+
+
+def tuned_model(input_shape = (32,32,3), num_class = 10):
+
+    model = keras.Sequential([
+        keras.layers.Flatten(input_shape = (160,160,3)),
+        keras.layers.Dense(units=160, activation= 'tanh'),
+        keras.layers.Dense(units=10,activation="softmax")
+    ])
+
+    optimizer = keras.optimizers.Adam(learning_rate=0.0001428379365495633)
+    
+    model.compile(
+        optimizer=optimizer,
+        loss = losses.binary_crossentropy,
+        metrics=["accuracy"]
+    )
+    
+    return model
